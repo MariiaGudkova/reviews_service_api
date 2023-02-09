@@ -1,20 +1,19 @@
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const validator = require('validator');
 const devConfig = require('../devConfig.json');
 const db = require('../utils/dbConnection');
 const BadRequestError = require('../errors/bad_request_err');
 const ConflictError = require('../errors/conflict_err');
 const ForbiddenError = require('../errors/forbidden_err');
-// const NotFoundError = require('../errors/notfound_err');
+const NotFoundError = require('../errors/notfound_err');
 const {
   INCORRECT_DATA_CREATE_USER_ERROR_TEXT,
-  // INCORRECT_DATA_UPDATE_USER_ERROR_TEXT,
+  INCORRECT_DATA_UPDATE_USER_ERROR_TEXT,
   EMAIL_EXIST_ERROR_TEXT,
   AUTHORIZATION_ERROR_TEXT,
-  // INVALID_ID_ERROR_TEXT,
-  // ID_NOT_FOUND_ERROR_TEXT,
-  // SUCCSSES_UPDATE_USER_TEXT,
+  ID_NOT_FOUND_USER_ERROR_TEXT,
 } = require('../utils/constants');
 
 const registerUser = async (req, res, next) => {
@@ -70,7 +69,7 @@ const loginUser = async (req, res, next) => {
     const isPasswordMatched = await bcrypt.compare(String(password), user.password);
     if (isPasswordMatched) {
       const token = jwt.sign({ id: user.id }, NODE_ENV === 'production' ? JWT_SECRET : devConfig.devSecret, { expiresIn: '7d' });
-      res.send({ token });
+      res.send({ id: user.id, token });
     } else {
       throw new ForbiddenError(AUTHORIZATION_ERROR_TEXT);
     }
@@ -80,4 +79,52 @@ const loginUser = async (req, res, next) => {
   }
 };
 
-module.exports = { registerUser, loginUser };
+const getUserInfo = async (req, res, next) => {
+  try {
+    const { id } = req.body;
+    const [user] = await new Promise((resolve, reject) => {
+      db.query('SELECT * FROM users WHERE id = ?', [id], (err, result) => {
+        if (err) {
+          reject(err);
+        }
+        resolve(result);
+      });
+    });
+    if (user) {
+      res.send(user);
+    } else {
+      throw new NotFoundError(ID_NOT_FOUND_USER_ERROR_TEXT);
+    }
+  } catch (err) {
+    console.error(err);
+    next(err);
+  }
+};
+
+const updateUserInfo = async (req, res, next) => {
+  try {
+    const { name, email, id } = req.body;
+    if (typeof name !== 'string' || name.length === 0) {
+      throw new BadRequestError(INCORRECT_DATA_UPDATE_USER_ERROR_TEXT);
+    }
+    if (!validator.isEmail(email)) {
+      throw new BadRequestError(INCORRECT_DATA_UPDATE_USER_ERROR_TEXT);
+    }
+    await new Promise((resolve, reject) => {
+      db.query(`UPDATE users SET name = '${name}', email = '${email}' WHERE id = ${id}`, (err, result) => {
+        if (err) {
+          reject(err);
+        }
+        resolve(result);
+      });
+    });
+    getUserInfo(req, res, next);
+  } catch (err) {
+    console.error(err);
+    next(err);
+  }
+};
+
+module.exports = {
+  registerUser, loginUser, getUserInfo, updateUserInfo,
+};
