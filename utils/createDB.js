@@ -12,7 +12,7 @@ db.query('CREATE TABLE users( id INT PRIMARY KEY AUTO_INCREMENT, email VARCHAR(6
   console.log('Users table created');
 });
 
-db.query('CREATE TABLE reviews( id INT PRIMARY KEY AUTO_INCREMENT, title VARCHAR(100) NOT NULL default "Заголовок", workTitle VARCHAR(100) NOT NULL default "Название произведения", description TEXT NOT NULL, cover BLOB, coverTwo BLOB, createDate DATETIME NOT NULL, rating TINYINT NOT NULL, category VARCHAR(100) NOT NULL default "Категория", tags VARCHAR(255) default "Теги", averageReviewRating FLOAT NOT NULL, likes TINYINT, dislikes TINYINT, views TINYINT, comments TEXT)', (err) => {
+db.query('CREATE TABLE reviews( id INT PRIMARY KEY AUTO_INCREMENT, title VARCHAR(100) NOT NULL default "Заголовок", workTitle VARCHAR(100) NOT NULL default "Название произведения", description TEXT NOT NULL, cover BLOB, coverTwo BLOB, createDate DATETIME NOT NULL, rating TINYINT NOT NULL, category VARCHAR(100) NOT NULL default "Категория", tags VARCHAR(255) default "Теги", averageReviewRating FLOAT NOT NULL, likes TINYINT, dislikes TINYINT, views TINYINT, comments TEXT,owner VARCHAR(255) NOT NULL)', (err) => {
   if (err) throw err;
   console.log('Reviews table created');
 });
